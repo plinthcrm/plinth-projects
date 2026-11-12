@@ -1135,6 +1135,7 @@ body,input,select,textarea,button{font-family:"Overused Grotesk","IBM Plex Sans 
 .adm-tabs{counter-reset:adm}
 .adm-tabs button::after{counter-increment:adm;content:"0." counter(adm);margin-inline-start:auto;font-size:10.5px;color:var(--muted);letter-spacing:.04em;font-variant-numeric:tabular-nums}
 .adm-ic{background:linear-gradient(150deg,var(--b-bliss),var(--b-burgundy))!important;color:var(--b-ivory)!important;border:0!important}
+.slow-hint{opacity:0;animation:slowHint .4s ease 9s forwards;margin-top:14px}@keyframes slowHint{to{opacity:1}}
 </style>
 </head>
 <body>
@@ -3511,8 +3512,8 @@ function viewSettings(){
  <section class="card set-sec"><div class="card-h">${ic('edit')}<h3>${t('onboardFields')}</h3></div><div class="card-b"><div class="rules-grid">${[...PF.map(f=>[f[0],fieldLabel(f[0])]),...DOCS.map(d=>[d[0],t('doc_'+d[0])])].map(([k,l])=>`<div class="rule"><span class="ellipsis">${esc(l)}</span><select class="sel" data-rule="${k}">${['req','opt','off'].map(r=>`<option value="${r}" ${ruleOf(k)===r?'selected':''}>${t(r==='req'?'fieldReq':r==='opt'?'fieldOpt':'fieldOff')}</option>`).join('')}</select></div>`).join('')}</div></div></section>`:''}
  ${admin?`<section class="card set-sec"><div class="card-h">${ic('spark')}<h3>${t('surpriseMode')} · ${t('payroll')} · ${t('kpi')}</h3></div><div class="card-b row wrap"><button class="btn" data-act="eventMode">🎉 ${t('surpriseMode')}</button><button class="btn" data-act="payRules">${ic('money')}${t('payRules')}</button><button class="btn" data-act="kpiW">${ic('flag')}${t('kpiWeights')}</button><button class="btn" data-act="newBuzz">${ic('spark')}${t('giveBuzz')}</button></div></section>`:''}
  <section class="card set-sec"><div class="card-h">${ic('db')}<h3>${t('sFb')}</h3><span class="sp"></span><span class="row small"><span class="status-dot ${fbOn?'on':''}"></span>${fbOn?t('connected'):t('localMode')}</span></div>
-  <div class="card-b"><p class="small muted" style="margin:0 0 12px">${t('sFbHint')}</p>
-  ${fbOn?`<div class="row wrap"><button class="btn" data-act="fbUpload">${ic('up')}${t('fbUpload')}</button><button class="btn" data-act="bulkLogins">${ic('users')}${t('bulkLogins')}</button><button class="btn" data-act="copyRules">${ic('copy')}${t('rulesCopy')}</button><button class="btn danger" data-act="fbOff">${t('disconnect')}</button></div>`:admin?`<div class="form"><div class="fld full"><label>${t('fbConfig')}</label><textarea class="codebox" id="fbcfg" placeholder='{ "apiKey": "...", "authDomain": "plinthleads.firebaseapp.com", "projectId": "plinthleads", ... }'>${prefs.fb?esc(JSON.stringify(prefs.fb,null,1)):''}</textarea></div><div class="fld"><label>${t('fbPrefix')}</label><input class="inp ltr" id="fbpre" value="${esc(prefs.fbPrefix)}"><span class="hint ltr">${COLLS.slice(0,6).map(x=>esc(prefs.fbPrefix)+x).join(' · ')} …</span></div><div class="fld" style="justify-content:flex-end;flex-direction:row;gap:8px;align-items:flex-end"><button class="btn" data-act="copyRules">${ic('copy')}${t('rulesCopy')}</button><button class="btn acc" data-act="fbConnect">${ic('link')}${t('connect')}</button></div></div>`:''}
+  <div class="card-b"><p class="small muted" style="margin:0 0 12px">${fbOn?t('fbOnHint'):t('sFbHint')}</p>
+  ${fbOn?(isOwnerAdmin()?`<div class="row wrap"><button class="btn" data-act="fbUpload">${ic('up')}${t('fbUpload')}</button><button class="btn" data-act="bulkLogins">${ic('users')}${t('bulkLogins')}</button><button class="btn" data-act="copyRules">${ic('copy')}${t('rulesCopy')}</button>${FB_CONFIG?'':`<button class="btn danger" data-act="fbOff">${t('disconnect')}</button>`}</div>`:''):admin?`<div class="form"><div class="fld full"><label>${t('fbConfig')}</label><textarea class="codebox" id="fbcfg" placeholder='{ "apiKey": "...", "authDomain": "plinthleads.firebaseapp.com", "projectId": "plinthleads", ... }'>${prefs.fb?esc(JSON.stringify(prefs.fb,null,1)):''}</textarea></div><div class="fld"><label>${t('fbPrefix')}</label><input class="inp ltr" id="fbpre" value="${esc(prefs.fbPrefix)}"><span class="hint ltr">${COLLS.slice(0,6).map(x=>esc(prefs.fbPrefix)+x).join(' · ')} …</span></div><div class="fld" style="justify-content:flex-end;flex-direction:row;gap:8px;align-items:flex-end"><button class="btn" data-act="copyRules">${ic('copy')}${t('rulesCopy')}</button><button class="btn acc" data-act="fbConnect">${ic('link')}${t('connect')}</button></div></div>`:''}
   </div></section>
  <section class="card set-sec"><div class="card-h">${ic('link')}<h3>${t('sCodes')}</h3></div><div class="card-b"><p class="small muted" style="margin:0 0 10px">${t('sCodesHint')}</p>
   <div class="row wrap ltr" style="gap:8px;justify-content:flex-start"><span class="chip">L-${yy}-NNNN</span>${ic('arrow')}<span class="chip">Q-${yy}-NNNN-Rn</span>${ic('arrow')}<span class="chip h-done">J-${yy}{E|S}-NNNN-nn</span></div>
@@ -4459,7 +4460,7 @@ function fbData(ud){
 }
 function fbGateView(){
  const ud=Store.userDoc;
- if(ud&&ud.status==='active')return `<div class="login-wrap"><div class="card login" style="text-align:center"><div class="brand-mark" style="margin:0 auto 14px;width:54px;height:54px">P+</div><p class="muted">${t('loadingData')}</p></div></div>`;
+ if(ud&&ud.status==='active')return `<div class="login-wrap"><div class="card login" style="text-align:center"><div class="brand-mark" style="margin:0 auto 14px;width:54px;height:54px">P+</div><p class="muted">${t('loadingData')}</p><div class="slow-hint small muted">${t('slowLoad')}<br><button class="btn sm" style="margin-top:10px" onclick="location.reload()">${t('retry')}</button></div></div></div>`;
  if(ud&&ud.status==='disabled')return `<div class="login-wrap"><div class="card login join-done">${ic('x')}<h2>${t('accDisabled')}</h2><p class="muted">${t('accDisabledSub')}</p><button class="btn" data-act="signOut">${t('signOutQ')}</button></div></div>`;
  if(Store.user&&Store.user.email===`${FB_OWNER}@${FB_AUTH_DOMAIN}`&&ud&&!ud.status)return `<div class="login-wrap"><div class="card login">${ownerSetupBody(true)}</div></div>`;
  if(ud&&!ud.status)return `<div class="login-wrap"><div class="card login join-done">${ic('alert')}<h2>${t('noAccess')}</h2><p class="muted">${t('noAccessSub')}</p><button class="btn" data-act="signOut">${t('signOutQ')}</button></div></div>`;
@@ -4496,7 +4497,7 @@ async function ownerSetup(f){
   b.set(db.collection(Store.coll('meta')).doc('boot'),{owner:fbUid(),at:firebase.firestore.FieldValue.serverTimestamp()});
   await b.commit();
   await fbUpload(src,['team','cfg','holidays']);
-  Store.booted=true;location.hash='settings';toast(t('systemActive'));
+  Store.booted=true;toast(t('systemActive'));location.hash='admin';if(!firebase.__mock)setTimeout(()=>location.reload(),600);
  }catch(e){err.textContent=e.code==='auth/email-already-in-use'||e.code==='permission-denied'?t('alreadySetup'):(e.message||e.code);btn.disabled=false}
 }
 /* ---------- move data into Firebase (admin) ---------- */
@@ -4776,7 +4777,7 @@ Object.assign(I18N.en,{
  bulkLogins:'Create logins',bulkHint:'Creates a secure account for every selected member with a one-time temporary password. On first sign-in each person must set their own password.',
  noUsername:'no username — set one in the member form',allHaveLogins:'Everyone already has a login.',copyAll:'Copy all',createLogins:'Create logins',tempPw:'Temporary password',
  tempPwNote:'Send each person their own line privately. This list is shown once only.',setYourPw:'Set your own password',setYourPwHint:'You signed in with a temporary password. Choose a personal one (8+ characters) to continue.',
- secureSignIn:'Secure cloud sign-in · Plinth & Partners',reLogin:'For security, sign out and sign in again, then retry.',tooManyTries:'Too many attempts. Please contact your project lead.',fbOffline:'Can’t reach the server. Check the internet connection.',retry:'Retry',
+ secureSignIn:'Secure cloud sign-in · Plinth & Partners',slowLoad:'Taking longer than usual — check the connection, then refresh.',reLogin:'For security, sign out and sign in again, then retry.',tooManyTries:'Too many attempts. Please contact your project lead.',fbOffline:'Can’t reach the server. Check the internet connection.',retry:'Retry',
  pwResetFb:'This username already has an account. To reset it: delete the user in Firebase Console → Authentication, then set a new password here.'
 });
 Object.assign(I18N.ar,{
@@ -4790,7 +4791,7 @@ Object.assign(I18N.ar,{
  bulkLogins:'إنشاء الحسابات',bulkHint:'ينشئ حسابًا آمنًا لكل عضو مختار بكلمة مرور مؤقتة لمرة واحدة. عند أول دخول لازم كل شخص يختار كلمة مروره.',
  noUsername:'بدون اسم مستخدم — حدده من نموذج العضو',allHaveLogins:'الكل لديه حساب بالفعل.',copyAll:'نسخ الكل',createLogins:'إنشاء الحسابات',tempPw:'كلمة مرور مؤقتة',
  tempPwNote:'ابعت لكل شخص بياناته بشكل خاص. القائمة تظهر مرة واحدة فقط.',setYourPw:'اختر كلمة مرورك',setYourPwHint:'دخلت بكلمة مرور مؤقتة. اختر كلمة مرور شخصية (8 حروف على الأقل) للمتابعة.',
- secureSignIn:'دخول سحابي آمن · Plinth & Partners',reLogin:'لأسباب أمنية، اخرج وادخل مرة أخرى ثم أعد المحاولة.',tooManyTries:'محاولات كثيرة. تواصل مع مسؤول المشروع.',fbOffline:'تعذر الوصول للخادم. تأكد من الاتصال بالإنترنت.',retry:'إعادة المحاولة',
+ secureSignIn:'دخول سحابي آمن · Plinth & Partners',slowLoad:'التحميل أطول من المعتاد — تأكد من الاتصال ثم حدّث الصفحة.',reLogin:'لأسباب أمنية، اخرج وادخل مرة أخرى ثم أعد المحاولة.',tooManyTries:'محاولات كثيرة. تواصل مع مسؤول المشروع.',fbOffline:'تعذر الوصول للخادم. تأكد من الاتصال بالإنترنت.',retry:'إعادة المحاولة',
  pwResetFb:'اسم المستخدم هذا له حساب بالفعل. لإعادة التعيين: احذف المستخدم من Firebase Console ← Authentication ثم حدد كلمة مرور جديدة هنا.'
 });
 
