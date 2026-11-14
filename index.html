@@ -4419,7 +4419,29 @@ function fbDocs(c,obj,last,noStamps){
   out.push(['private',d.id,priv]);
  }
  if(c==='chat'){const ms=chMembers(d.ch);d.pub=!ms;d.members=ms||[]}
+ if(c==='projects')d.members=projMembers(obj);
+ if(c==='tasks'||c==='logs'){const p=proj(obj.projectId);d.members=p?(p.members&&p.members.length?p.members:projMembers(p)):[obj.assigneeId||obj.by].filter(Boolean)}
  out.unshift([c,obj.id,d]);return out;
+}
+const seeAllProj=()=>isOwnerAdmin()||P('proj.viewAll')||P('task.manage')||access()==='lead';
+let MEM_ED=false;const projEditor=p=>MEM_ED||isOwnerAdmin()||P('proj.edit')||P('task.manage')||access()==='lead'||(!!p&&p.leadId===prefs.me);
+function projMembers(p){
+ if(!p)return [];const set=new Set([p.leadId,...(p.memberIds||[])]);
+ S.tasks.forEach(x=>{if(x.projectId!==p.id)return;if(x.assigneeId)set.add(x.assigneeId);try{const r=reviewerOf(x);if(r)set.add(r)}catch(e){}});
+ ['',null,undefined].forEach(v=>set.delete(v));
+ if(projEditor(p))return [...set].sort();
+ // a plain member never removes anyone and can only add himself
+ const cur=new Set(p.members||[]);if(set.has(prefs.me))cur.add(prefs.me);return [...cur].sort();
+}
+function fbPropagate(p){
+ if(!Store.fb||!projEditor(p))return;const mem=p.members||[],key=JSON.stringify(mem),db=Store.fb.db;
+ S.tasks.forEach(x=>{if(x.projectId===p.id&&FB_LAST['tasks/'+x.id]&&JSON.stringify(x.members||[])!==key){x.members=mem;db.collection(Store.coll('tasks')).doc(x.id).update({members:mem}).catch(fbErr('tasks',x.id))}});
+ if(isOwnerAdmin()||access()==='lead'||P('task.manage'))S.logs.forEach(l=>{if(l.projectId===p.id&&FB_LAST['logs/'+l.id]&&JSON.stringify(l.members||[])!==key){l.members=mem;db.collection(Store.coll('logs')).doc(l.id).update({members:mem}).catch(()=>{})}});
+}
+let MEM_MIG=false;
+function memberMigrate(){ // older records written before visibility existed: give them their members once
+ if(MEM_MIG||!(isOwnerAdmin()||P('proj.edit')))return;MEM_MIG=true;
+ setTimeout(()=>S.projects.forEach(p=>{if(!Array.isArray(p.members)||S.tasks.some(x=>x.projectId===p.id&&!Array.isArray(x.members)))Store.put('projects',p)}),2500);
 }
 function fbErr(c,id){return e=>{console.warn('[fb]',c,id,e.code||e.message);toast(e.code==='permission-denied'?t('noPerm'):t('fbErr')+': '+(e.message||e.code))}}
 function fbWrite(c,id,data){
@@ -4432,7 +4454,10 @@ function fbWrite(c,id,data){
 Store.put=function(c,obj){
  if(this.mode!=='fb'||!this.fb){this.saveLocal();return}
  if(c==='pmsgs')return; // portal messages live under pdt_portals/{key}/msgs
+ if(c==='projects'){obj.members=projMembers(obj);
+  if(!projEditor(obj)){this.fb.db.collection(this.coll('projects')).doc(obj.id).update({updatedAt:obj.updatedAt||nowIso(),members:obj.members}).catch(e=>console.warn('[fb] project bump',e.code));return}}
  fbDocs(c,obj,FB_LAST[c+'/'+obj.id]).forEach(([cc,id,data])=>fbWrite(cc,id,data));
+ if(c==='projects')fbPropagate(obj);
 };
 Store.drop=function(c,id){
  if(this.mode!=='fb'||!this.fb){this.saveLocal();return}
@@ -4455,7 +4480,7 @@ Store.connect=async function(cfg){
 };
 /* who listens to what — "rules are not filters", so every query matches its rule */
 const SUBS={notifs:{own:'to'},chat:{chat:1},attendance:{own:'memberId',perm:['att.team','pay.view']},hr:{own:'memberId',extra:'seniorId',perm:['hr.approve','pay.view']},changes:{own:'memberId',perm:['team.manage']},down:{own:'memberId',adm:1},
- ratings:{own:'memberId',extra:'by',perm:['kpi.viewAll']},comp:{perm:['pay.view'],fin:1,none:1},slips:{own:'memberId',also:['status','==','final'],perm:['pay.view'],fin:1},invites:{perm:['team.invite'],none:1},applicants:{perm:['team.invite'],none:1},pmsgs:{skip:1},private:{own:'memberId',perm:['team.manage']},audit:{perm:['admin.security'],none:1}};
+ ratings:{own:'memberId',extra:'by',perm:['kpi.viewAll']},comp:{perm:['pay.view'],fin:1,none:1},slips:{own:'memberId',also:['status','==','final'],perm:['pay.view'],fin:1},invites:{perm:['team.invite'],none:1},applicants:{perm:['team.invite'],none:1},projects:{arr:1,lead:1,perm:['proj.viewAll']},tasks:{arr:1,own:'assigneeId',lead:1,perm:['proj.viewAll']},logs:{arr:1,lead:1,perm:['proj.viewAll']},pmsgs:{skip:1},private:{own:'memberId',perm:['team.manage']},audit:{perm:['admin.security'],none:1}};
 function mergePriv(){S.team.forEach(m=>{const p=PRIV[m.id];if(p){m.profile=Object.assign({},m.profile||{},p.profile||{});m.docs=p.docs||{}}})}
 Store.subscribe=function(){
  this.unsub();let sig=null;
@@ -4474,7 +4499,8 @@ function fbData(ud){
   const spec=SUBS[c]||{},col=db.collection(Store.coll(c));if(spec.skip)return;
   let qs;
   if(spec.chat)qs=[col.where('pub','==',true),col.where('members','array-contains',meId)];
-  else if(!SUBS[c]||(spec.adm&&adm)||(spec.fin&&fin)||(spec.perm&&(adm||spec.perm.some(p=>pset.has(p)))))qs=[col];
+  else if(!SUBS[c]||(spec.adm&&adm)||(spec.fin&&fin)||(spec.lead&&(adm||ud.lead))||(spec.perm&&(adm||spec.perm.some(p=>pset.has(p)))))qs=[col];
+  else if(spec.arr){qs=[col.where('members','array-contains',meId)];if(spec.own)qs.push(col.where(spec.own,'==',meId))}
   else if(spec.none)qs=[];
   else{let q=col.where(spec.own,'==',meId);if(spec.also)q=q.where(...spec.also);qs=[q];if(spec.extra)qs.push(col.where(spec.extra,'==',meId))}
   if(!qs.length)return;
@@ -4483,7 +4509,7 @@ function fbData(ud){
    parts[i]=snap.docs.map(d=>fbNorm(c,d.data({serverTimestamps:'estimate'}),d.id));
    const mp=new Map();parts.flat().forEach(o=>mp.set(o.id,o));const arr=[...mp.values()];
    if(c==='private'){PRIV={};arr.forEach(p=>PRIV[p.id]=p);mergePriv()}else{S[c]=arr;if(c==='team')mergePriv()}
-   S.meta.demo=false;if(c==='cfg'&&!S.cfg.length)S.cfg.push(JSON.parse(JSON.stringify(DEFAULT_CFG)));if(c==='time')TIDX=null;if(c==='notifs')browserNotify();if(c==='projects')portalWatch();
+   S.meta.demo=false;if(c==='cfg'&&!S.cfg.length)S.cfg.push(JSON.parse(JSON.stringify(DEFAULT_CFG)));if(c==='time')TIDX=null;if(c==='notifs')browserNotify();if(c==='projects')portalWatch();if(c==='projects'||c==='tasks')memberMigrate();
    scheduleRender()},e=>console.warn('[fb]',c,e.code))));
  });
  if(ud.mustChange)setTimeout(forceChangePw,900);
@@ -4533,8 +4559,9 @@ async function ownerSetup(f){
 }
 /* ---------- move data into Firebase (admin) ---------- */
 async function fbUpload(src,colls,onp){
- const db=Store.fb.db,docs=[];
- colls.forEach(c=>(src[c]||[]).forEach(o=>{if(c==='holidays'&&!o.approved&&o.date<TODAY())return;fbDocs(c,o,null,true).forEach(x=>docs.push(x))}));
+ const db=Store.fb.db,docs=[],kS=S;S=src;ensureColls();
+ try{(src.projects||[]).forEach(p=>{const ed=MEM_ED;MEM_ED=true;try{p.members=projMembers(p)}finally{MEM_ED=ed}});
+ colls.forEach(c=>(src[c]||[]).forEach(o=>{if(c==='holidays'&&!o.approved&&o.date<TODAY())return;fbDocs(c,o,null,true).forEach(x=>docs.push(x))}))}finally{S=kS}
  for(let i=0;i<docs.length;i+=400){const b=db.batch();docs.slice(i,i+400).forEach(([c,id,data])=>b.set(db.collection(Store.coll(c)).doc(id),data));await b.commit();onp&&onp(Math.min(docs.length,i+400),docs.length)}
  return docs.length;
 }
@@ -4718,16 +4745,31 @@ function pdtRules(){const P=FB_PREFIX,D='database';return `    // ==============
         || ((pdtCan('time.approve') || (pdtActive() && resource.data.get('reviewer', '') == pdtMe())) && pdtOnly(['status','decidedBy']));
       allow delete: if pdtAdmin();
     }
+    // projects & tasks: you see what you work on; leads, admins and "see all projects" see everything
+    function pdtSeeAll() { return pdtLead() || pdtCan('proj.viewAll'); }
+    function pdtProjLead(pid) { return pid is string && get(/databases/$(${D})/documents/${P}projects/$(pid)).data.get('leadId', '') == pdtMe(); }
     match /${P}tasks/{id} {
-      allow read, create: if pdtActive();
+      allow read: if pdtSeeAll() || (pdtActive() && (resource.data.assigneeId == pdtMe() || pdtMe() in resource.data.members));
+      allow create: if pdtActive() && (pdtSeeAll() || pdtCan('proj.create') || pdtCan('task.manage') || pdtProjLead(request.resource.data.get('projectId', null))
+        || (pdtCan('task.own') && request.resource.data.get('assigneeId', '') == pdtMe() && pdtMe() in request.resource.data.get('members', [])));
       allow update: if pdtActive()
         && (!('proofSrv' in pdtAff()) || request.resource.data.proofSrv == request.time)
-        && (!('proof' in pdtAff()) || request.resource.data.get('proof', null) == null || 'proofSrv' in pdtAff() || pdtLead());
+        && (!('proof' in pdtAff()) || request.resource.data.get('proof', null) == null || 'proofSrv' in pdtAff() || pdtLead())
+        && (pdtLead() || pdtCan('task.manage') || pdtCan('proj.edit')
+          || (resource.data.get('assigneeId', '') == pdtMe() && request.resource.data.get('assigneeId', '') == pdtMe())
+          || (resource.data.get('assigneeId', '') == '' && request.resource.data.get('assigneeId', '') == pdtMe() && pdtMe() in resource.data.get('members', []))
+          || (resource.data.get('status', '') == 'review' && pdtMe() in resource.data.get('members', []))
+          || pdtProjLead(resource.data.get('projectId', null)));
       allow delete: if pdtCan('task.manage') || pdtLead();
     }
     match /${P}projects/{id} {
-      allow read, create: if pdtActive();
-      allow update: if pdtActive() && (!('code' in pdtAff()) || pdtCan('proj.code')) && (!('portal' in pdtAff()) || pdtCan('proj.portal') || pdtLead());
+      allow read: if pdtSeeAll() || (pdtActive() && pdtMe() in resource.data.members);
+      allow create: if pdtCan('proj.create') || pdtLead();
+      allow update: if pdtActive() && (!('code' in pdtAff()) || pdtCan('proj.code')) && (!('portal' in pdtAff()) || pdtCan('proj.portal') || pdtLead())
+        && (pdtCan('proj.edit') || pdtLead() || resource.data.get('leadId', '') == pdtMe()
+          || (pdtMe() in resource.data.get('members', []) && pdtOnly(['updatedAt', 'members'])
+              && request.resource.data.get('members', []).toSet().difference(resource.data.get('members', []).toSet()).hasOnly([pdtMe()])
+              && resource.data.get('members', []).toSet().difference(request.resource.data.get('members', []).toSet()).size() == 0));
       allow delete: if pdtCan('proj.delete');
     }
     match /${P}hr/{id} {
@@ -4763,7 +4805,7 @@ function pdtRules(){const P=FB_PREFIX,D='database';return `    // ==============
       allow update: if pdtActive() && (resource.data.pub == true || pdtMe() in resource.data.members) && pdtOnly(['react']);
       allow delete: if pdtAdmin() || (pdtActive() && resource.data.from == pdtMe());
     }
-    match /${P}logs/{id}        { allow read, create: if pdtActive(); allow update, delete: if pdtAdmin(); }
+    match /${P}logs/{id}        { allow read: if pdtSeeAll() || (pdtActive() && pdtMe() in resource.data.members); allow create: if pdtActive(); allow update: if pdtAdmin() || (pdtLead() && pdtOnly(['members'])); allow delete: if pdtAdmin(); }
     match /${P}memos/{id}       { allow read: if pdtActive(); allow create, delete: if pdtCan('memo.post'); allow update: if pdtCan('memo.post') || (pdtActive() && pdtOnly(['acks'])); }
     match /${P}buzz/{id}        { allow read: if pdtActive(); allow create: if pdtActive() && request.resource.data.get('golden', false) != true || pdtCan('buzz.golden'); allow update: if pdtAdmin() || (pdtActive() && pdtOnly(['cheers','seen','wishes'])); allow delete: if pdtAdmin(); }
     match /${P}stories/{id}     { allow read: if pdtActive(); allow write: if pdtCan('proj.stories') || pdtLead(); }
@@ -4857,7 +4899,7 @@ Object.assign(I18N.en,{
  tpl_blank:'Blank (minimal access)',tpl_accountant:'Accountant template',tpl_hrofficer:'HR officer template',tpl_pm:'Project manager template',
  pg_mod:'Modules',pg_proj:'Projects',pg_task:'Tasks & time',pg_people:'People & performance',pg_hr:'HR & attendance',pg_fin:'Finance',pg_culture:'Culture & communication',pg_sys:'System & admin',
  pm_mod_timeline:'Timeline',pd_mod_timeline:'See the Gantt timeline',pm_mod_stories:'Stories',pd_mod_stories:'Read project stories',pm_mod_chat:'Team chat',pd_mod_chat:'Channels and direct messages',pm_mod_memos:'Memos',pd_mod_memos:'Read company memos',pm_mod_team:'Team directory',pd_mod_team:'See colleagues and profiles',pm_mod_attendance:'Attendance',pd_mod_attendance:'Check in / out',pm_mod_hr:'Requests',pd_mod_hr:'Leave and HR requests',
- pm_proj_create:'Create projects',pd_proj_create:'Start new projects and pick scope',pm_proj_edit:'Edit projects',pd_proj_edit:'Stages, dates, scope and details',pm_proj_delete:'Delete projects',pd_proj_delete:'Permanently remove a project',pm_proj_code:'Change project codes',pd_proj_code:'Unlock the permanent code',pm_proj_portal:'Client portal',pd_proj_portal:'Create links, share files with clients',pm_proj_stories:'Write stories',pd_proj_stories:'Create and edit project stories',
+ pm_proj_viewAll:'See all projects',pd_proj_viewAll:'Without it, a person only sees the projects they work on',pm_proj_create:'Create projects',pd_proj_create:'Start new projects and pick scope',pm_proj_edit:'Edit projects',pd_proj_edit:'Stages, dates, scope and details',pm_proj_delete:'Delete projects',pd_proj_delete:'Permanently remove a project',pm_proj_code:'Change project codes',pd_proj_code:'Unlock the permanent code',pm_proj_portal:'Client portal',pd_proj_portal:'Create links, share files with clients',pm_proj_stories:'Write stories',pd_proj_stories:'Create and edit project stories',
  pm_task_own:'Work on own tasks',pd_task_own:'Timers, status and proof on assigned tasks',pm_task_manage:'Manage all tasks',pd_task_manage:'Create, assign and edit anyone’s tasks',pm_task_review:'Review any deliverable',pd_task_review:'Approve or return submitted work',pm_time_approve:'Approve time',pd_time_approve:'Approve logged-after-the-fact hours',
  pm_team_manage:'Manage members',pd_team_manage:'Edit profiles and approve profile changes',pm_team_invite:'Invite & onboard',pd_team_invite:'Create invite links, approve new joiners',pm_kpi_viewAll:'See everyone’s KPI',pd_kpi_viewAll:'Scores of the whole team',pm_kpi_rate:'Rate reports',pd_kpi_rate:'Monthly rating of people they lead',pm_kpi_manage:'KPI weights',pd_kpi_manage:'Change how scores are calculated',
  pm_hr_approve:'Final HR approval',pd_hr_approve:'Approve leave and HR requests',pm_att_team:'Team attendance',pd_att_team:'See everyone’s check-ins',pm_att_location:'Check-in locations',pd_att_location:'Map and distance from office',pm_att_remote:'Remote check-in',pd_att_remote:'Check in outside the geofence',
@@ -4913,7 +4955,7 @@ Object.assign(I18N.ar,{
  tpl_blank:'فارغ (أقل صلاحية)',tpl_accountant:'قالب المحاسب',tpl_hrofficer:'قالب مسؤول الموارد البشرية',tpl_pm:'قالب مدير المشروعات',
  pg_mod:'الأقسام',pg_proj:'المشروعات',pg_task:'المهام والوقت',pg_people:'الفريق والأداء',pg_hr:'الموارد البشرية والحضور',pg_fin:'المالية',pg_culture:'الثقافة والتواصل',pg_sys:'النظام والإدارة',
  pm_mod_timeline:'الجدول الزمني',pd_mod_timeline:'عرض مخطط جانت',pm_mod_stories:'القصص',pd_mod_stories:'قراءة قصص المشروعات',pm_mod_chat:'محادثة الفريق',pd_mod_chat:'القنوات والرسائل الخاصة',pm_mod_memos:'التعاميم',pd_mod_memos:'قراءة تعاميم الشركة',pm_mod_team:'دليل الفريق',pd_mod_team:'عرض الزملاء وملفاتهم',pm_mod_attendance:'الحضور',pd_mod_attendance:'تسجيل الحضور والانصراف',pm_mod_hr:'الطلبات',pd_mod_hr:'الإجازات وطلبات الموارد البشرية',
- pm_proj_create:'إنشاء مشروعات',pd_proj_create:'بدء مشروعات جديدة واختيار النطاق',pm_proj_edit:'تعديل المشروعات',pd_proj_edit:'المراحل والتواريخ والنطاق والتفاصيل',pm_proj_delete:'حذف المشروعات',pd_proj_delete:'حذف مشروع نهائيًا',pm_proj_code:'تغيير أكواد المشروعات',pd_proj_code:'فتح قفل الكود الدائم',pm_proj_portal:'بوابة العميل',pd_proj_portal:'إنشاء الروابط ومشاركة الملفات مع العملاء',pm_proj_stories:'كتابة القصص',pd_proj_stories:'إنشاء وتعديل قصص المشروعات',
+ pm_proj_viewAll:'رؤية كل المشروعات',pd_proj_viewAll:'بدونها يرى الشخص المشروعات التي يعمل عليها فقط',pm_proj_create:'إنشاء مشروعات',pd_proj_create:'بدء مشروعات جديدة واختيار النطاق',pm_proj_edit:'تعديل المشروعات',pd_proj_edit:'المراحل والتواريخ والنطاق والتفاصيل',pm_proj_delete:'حذف المشروعات',pd_proj_delete:'حذف مشروع نهائيًا',pm_proj_code:'تغيير أكواد المشروعات',pd_proj_code:'فتح قفل الكود الدائم',pm_proj_portal:'بوابة العميل',pd_proj_portal:'إنشاء الروابط ومشاركة الملفات مع العملاء',pm_proj_stories:'كتابة القصص',pd_proj_stories:'إنشاء وتعديل قصص المشروعات',
  pm_task_own:'العمل على مهامه',pd_task_own:'المؤقت والحالة والتسليم في المهام المسندة له',pm_task_manage:'إدارة كل المهام',pd_task_manage:'إنشاء وإسناد وتعديل مهام أي شخص',pm_task_review:'مراجعة أي تسليم',pd_task_review:'اعتماد أو إرجاع الأعمال المسلمة',pm_time_approve:'اعتماد الوقت',pd_time_approve:'اعتماد الساعات المسجلة بأثر رجعي',
  pm_team_manage:'إدارة الأعضاء',pd_team_manage:'تعديل الملفات واعتماد تعديلات البيانات',pm_team_invite:'الدعوة والتعيين',pd_team_invite:'إنشاء روابط الدعوة واعتماد المنضمين',pm_kpi_viewAll:'عرض مؤشرات الكل',pd_kpi_viewAll:'تقييمات الفريق بالكامل',pm_kpi_rate:'تقييم التابعين',pd_kpi_rate:'التقييم الشهري للفريق اللي بيقوده',pm_kpi_manage:'أوزان المؤشرات',pd_kpi_manage:'تغيير طريقة حساب التقييم',
  pm_hr_approve:'الاعتماد النهائي للطلبات',pd_hr_approve:'اعتماد الإجازات وطلبات الموارد البشرية',pm_att_team:'حضور الفريق',pd_att_team:'عرض تسجيلات حضور الجميع',pm_att_location:'مواقع التسجيل',pd_att_location:'الخريطة والمسافة من المكتب',pm_att_remote:'حضور عن بعد',pd_att_remote:'التسجيل خارج النطاق الجغرافي',
@@ -4957,7 +4999,7 @@ Object.assign(IC,{
 /* ---------- permission catalogue ---------- */
 const PERMS=[
  ['mod',['mod.timeline','mod.stories','mod.chat','mod.memos','mod.team','mod.attendance','mod.hr']],
- ['proj',['proj.create','proj.edit','proj.delete','proj.code','proj.portal','proj.stories']],
+ ['proj',['proj.viewAll','proj.create','proj.edit','proj.delete','proj.code','proj.portal','proj.stories']],
  ['task',['task.own','task.manage','task.review','time.approve']],
  ['people',['team.manage','team.invite','kpi.viewAll','kpi.rate','kpi.manage']],
  ['hr',['hr.approve','att.team','att.location','att.remote']],
@@ -4968,7 +5010,7 @@ const PERMS=[
 const ALL_PERMS=PERMS.flatMap(g=>g[1]);
 const MOD_ALL=PERMS[0][1];
 const MODK={timeline:'mod.timeline',stories:'mod.stories',story:'mod.stories',chat:'mod.chat',memos:'mod.memos',team:'mod.team',member:'mod.team',attendance:'mod.attendance',hr:'mod.hr',payroll:'pay.view',admin:'admin.panel'};
-const LEAD_PERMS=[...MOD_ALL,'proj.create','proj.edit','proj.portal','proj.stories','task.own','task.manage','task.review','time.approve','kpi.rate','att.team'];
+const LEAD_PERMS=[...MOD_ALL,'proj.viewAll','proj.create','proj.edit','proj.portal','proj.stories','task.own','task.manage','task.review','time.approve','kpi.rate','att.team'];
 const ENG_PERMS=[...MOD_ALL,'task.own','kpi.rate'];
 const BASE_ROLES={
  admin:{key:'admin',base:'admin',color:'#D8B878',perms:ALL_PERMS},
