@@ -1136,6 +1136,7 @@ body,input,select,textarea,button{font-family:"Overused Grotesk","IBM Plex Sans 
 .adm-tabs button::after{counter-increment:adm;content:"0." counter(adm);margin-inline-start:auto;font-size:10.5px;color:var(--muted);letter-spacing:.04em;font-variant-numeric:tabular-nums}
 .adm-ic{background:linear-gradient(150deg,var(--b-bliss),var(--b-burgundy))!important;color:var(--b-ivory)!important;border:0!important}
 .slow-hint{opacity:0;animation:slowHint .4s ease 9s forwards;margin-top:14px}@keyframes slowHint{to{opacity:1}}
+.join-err{display:flex;gap:12px;align-items:flex-start;margin:14px 0 4px;padding:12px 14px;border-radius:12px;border:1px solid color-mix(in srgb,var(--late) 45%,transparent);background:color-mix(in srgb,var(--late) 10%,transparent);color:var(--ink)}.join-err svg{color:var(--late);flex:none;margin-top:2px}
 </style>
 </head>
 <body>
@@ -2120,7 +2121,7 @@ Object.assign(I18N.en,{
  e_inhouse:'In-house',e_outsource:'Outsource',e_parttime:'Part-time',e_freelance:'Freelance',
  o_male:'Male',o_female:'Female',o_single:'Single',o_married:'Married',o_other:'Other',o_completed:'Completed',o_exempted:'Exempted',o_postponed:'Postponed',o_na:'Not applicable',
  inviteMember:'Invite a team member',inviteHint:'Create a private link. The new member fills in their full profile, uploads documents and creates their login — it then comes to you for approval.',inviteName:'Name (optional)',createLink:'Create link',inviteMsg:'Welcome to Plinth & Partners! Please complete your profile here:',inviteReady:'Invitation link ready',inviteShare:'Send this link to the new member. It works once.',copyLink:'Copy link',openForm:'Open form',
- joinTitle:'Team member onboarding',inviteInvalid:'This invitation link is invalid or has expired.',joinThanks:'Thank you — your profile was submitted',joinThanksSub:'The team will review it and activate your account. You will be able to sign in with your username once approved.',
+ joinTitle:'Team member onboarding',inviteInvalid:'This invitation link is invalid or has expired.',joinThanks:'Thank you — your profile was submitted',inviteUsed:'This invitation was already used',inviteAskNew:'Ask the Plinth team for a new invitation link.',joinFailT:'Your profile was not sent yet',joinFailHint:'Nothing you typed is lost. Press Try again; if it keeps failing, send a screenshot of this message to the team.',sending:'Sending…',tryAgain:'Try again',js_err_account:'Could not create your login',js_err_files:'Could not upload your documents',js_err_invite:'Not allowed to save — the invitation may be closed',js_err_profile:'Could not save your profile',js_err_access:'Could not register your access',pendingT:'Your account is waiting for approval',pendingSub:'The team reviews new profiles and activates the account. If you were told your profile did not arrive, open your invitation link again and submit with the same username and password.',joinThanksSub:'The team will review it and activate your account. You will be able to sign in with your username once approved.',
  photo:'Personal photo',photoHint:'Clear, front-facing photo. JPG or PNG.',photoReq:'Please add your photo',sec_personal:'Personal information',sec_contact:'Contact & emergency',sec_work:'Job details',sec_edu:'Education & skills',sec_bank:'Bank details (optional)',
  docsHint:'Upload clear scans or photos. PDF or image, up to 8 MB each.',doc_cv:'CV / Resume',doc_idFront:'National ID — front',doc_idBack:'National ID — back',doc_degreeCert:'Graduation certificate',doc_militaryCert:'Military status certificate',doc_passport:'Passport copy',doc_portfolioFile:'Portfolio (PDF)',doc_other:'Other document',tapUpload:'Tap to upload',
  username:'Username',usernameHint:'Lowercase letters, numbers, dot or dash — at least 3 characters',pwHint:'At least 8 characters',pwConfirm:'Confirm password',pwMismatch:'Passwords must match and be at least 8 characters',
@@ -2164,7 +2165,7 @@ Object.assign(I18N.ar,{
  e_inhouse:'داخلي',e_outsource:'خارجي',e_parttime:'دوام جزئي',e_freelance:'عمل حر',
  o_male:'ذكر',o_female:'أنثى',o_single:'أعزب',o_married:'متزوج',o_other:'أخرى',o_completed:'أدى الخدمة',o_exempted:'معفى',o_postponed:'مؤجل',o_na:'لا ينطبق',
  inviteMember:'دعوة عضو جديد',inviteHint:'أنشئ رابطاً خاصاً. يملأ العضو الجديد بياناته كاملة ويرفع مستنداته وينشئ حسابه، ثم تصلك للاعتماد.',inviteName:'الاسم (اختياري)',createLink:'إنشاء الرابط',inviteMsg:'أهلاً بك في Plinth & Partners! برجاء استكمال بياناتك من هنا:',inviteReady:'رابط الدعوة جاهز',inviteShare:'أرسل هذا الرابط للعضو الجديد. يعمل مرة واحدة.',copyLink:'نسخ الرابط',openForm:'فتح الفورم',
- joinTitle:'تسجيل عضو جديد بالفريق',inviteInvalid:'رابط الدعوة غير صالح أو منتهي.',joinThanks:'شكراً — تم إرسال بياناتك',joinThanksSub:'سيراجع الفريق بياناتك ويفعّل حسابك. ستتمكن من الدخول باسم المستخدم بعد الاعتماد.',
+ joinTitle:'تسجيل عضو جديد بالفريق',inviteInvalid:'رابط الدعوة غير صالح أو منتهي.',joinThanks:'شكراً — تم إرسال بياناتك',inviteUsed:'تم استخدام هذه الدعوة من قبل',inviteAskNew:'اطلب من فريق بلينث رابط دعوة جديد.',joinFailT:'لم يتم إرسال بياناتك بعد',joinFailHint:'لم يضع شيء مما كتبته. اضغط "حاول مرة أخرى"، وإن تكرر الخطأ أرسل صورة من هذه الرسالة للفريق.',sending:'جارٍ الإرسال…',tryAgain:'حاول مرة أخرى',js_err_account:'تعذّر إنشاء حساب الدخول',js_err_files:'تعذّر رفع المستندات',js_err_invite:'غير مسموح بالحفظ — ربما أُغلقت الدعوة',js_err_profile:'تعذّر حفظ بياناتك',js_err_access:'تعذّر تسجيل صلاحية الدخول',pendingT:'حسابك في انتظار الاعتماد',pendingSub:'يراجع الفريق البيانات الجديدة ثم يفعّل الحساب. إن أُبلغت أن بياناتك لم تصل، افتح رابط الدعوة مرة أخرى وأرسل بنفس اسم المستخدم وكلمة المرور.',joinThanksSub:'سيراجع الفريق بياناتك ويفعّل حسابك. ستتمكن من الدخول باسم المستخدم بعد الاعتماد.',
  photo:'الصورة الشخصية',photoHint:'صورة واضحة من الأمام. JPG أو PNG.',photoReq:'برجاء إضافة صورتك',sec_personal:'البيانات الشخصية',sec_contact:'التواصل والطوارئ',sec_work:'بيانات الوظيفة',sec_edu:'التعليم والمهارات',sec_bank:'البيانات البنكية (اختياري)',
  docsHint:'ارفع صوراً أو نسخاً واضحة. PDF أو صورة، حتى 8 ميجا لكل ملف.',doc_cv:'السيرة الذاتية',doc_idFront:'البطاقة — الوجه',doc_idBack:'البطاقة — الظهر',doc_degreeCert:'شهادة التخرج',doc_militaryCert:'شهادة الموقف من التجنيد',doc_passport:'صورة جواز السفر',doc_portfolioFile:'البورتفوليو (PDF)',doc_other:'مستند آخر',tapUpload:'اضغط للرفع',
  username:'اسم المستخدم',usernameHint:'حروف إنجليزية صغيرة وأرقام ونقطة أو شرطة — 3 حروف على الأقل',pwHint:'8 أحرف على الأقل',pwConfirm:'تأكيد كلمة المرور',pwMismatch:'كلمتا المرور يجب أن تتطابقا وألا تقل عن 8 أحرف',
@@ -2624,11 +2625,12 @@ function showInvite(inv){
 const JOIN_STEPS=['personal','contact','work','edu','docs','account'];
 let JOIN={step:0,vals:{},files:{},photo:null};
 function viewJoin(tok){
- const inv=S.invites.find(i=>i.token===tok);
+ let inv=S.invites.find(i=>i.token===tok)||(JOIN.inv&&JOIN.inv.token===tok?JOIN.inv:null);if(inv&&!JOIN.inv)JOIN.inv=inv;
  if(Store.mode==='fb'&&!inv&&!JOIN.loaded){JOIN.loaded=true;Store.fb&&Store.fb.db.collection(Store.coll('invites')).doc(tok).get().then(d=>{if(d.exists){S.invites.push(d.data());render()}});}
  const shell=c=>`<div class="join"><div class="join-brand"><div class="brand-mark">P+</div><div><div class="pt-word">${BRAND_WORD}</div><span>${t('joinTitle')}</span></div><span class="grow"></span><button class="icon-btn" data-act="lang"><b style="font-size:12.5px">${prefs.lang==='ar'?'EN':'ع'}</b></button></div>${c}</div>`;
  if(!inv)return shell(`<div class="card card-b empty">${ic('link')}<div>${t('inviteInvalid')}</div></div>`);
- if(inv.status!=='open'||JOIN.done)return shell(`<div class="card join-done">${ic('check')}<h2>${t('joinThanks')}</h2><p class="muted">${t('joinThanksSub')}</p></div>`);
+ if(JOIN.done)return shell(`<div class="card join-done">${ic('check')}<h2>${t('joinThanks')}</h2><p class="muted">${t('joinThanksSub')}</p></div>`);
+ if(inv.status!=='open'&&!JOIN.ap)return shell(`<div class="card join-done">${ic('alert')}<h2>${t(inv.status==='used'?'inviteUsed':'inviteInvalid')}</h2><p class="muted">${t('inviteAskNew')}</p></div>`);
  if(!JOIN.vals.role&&inv.role)JOIN.vals.role=inv.role;if(!JOIN.vals.dept&&inv.dept)JOIN.vals.dept=inv.dept;if(!JOIN.vals.empType&&inv.empType)JOIN.vals.empType=inv.empType;
  const st=JOIN_STEPS[JOIN.step];
  let body='';
@@ -2643,17 +2645,18 @@ function viewJoin(tok){
  }
  return shell(`<div class="card join-card"><div class="jsteps">${JOIN_STEPS.map((s,i)=>`<span class="${i<JOIN.step?'d':i===JOIN.step?'a':''}"><i class="num">${i<JOIN.step?'✓':i+1}</i><em>${t('js_'+s)}</em></span>`).join('')}</div>
   <form id="joinF" class="join-b" autocomplete="on"><h3>${t('js_'+st)}</h3>${body}</form>
-  <div class="m-f">${JOIN.step?`<button class="btn" data-act="joinBack">${ic('back','flip')}${t('back')}</button>`:''}<span class="sp"></span><button class="btn acc" data-act="joinNext">${JOIN.step===JOIN_STEPS.length-1?t('submit'):t('next')}${ic('arrow','flip')}</button></div></div>`);
+  ${JOIN.err?`<div class="join-err">${ic('alert')}<div><b>${t('joinFailT')}</b><div class="small">${esc(JOIN.err)}</div><div class="small muted">${t('joinFailHint')}</div></div></div>`:''}<div class="m-f">${JOIN.step&&!JOIN.busy?`<button class="btn" data-act="joinBack">${ic('back','flip')}${t('back')}</button>`:''}<span class="sp"></span><button class="btn acc" data-act="joinNext" ${JOIN.busy?'disabled':''}>${JOIN.busy?t('sending'):JOIN.err?t('tryAgain'):JOIN.step===JOIN_STEPS.length-1?t('submit'):t('next')}${ic('arrow','flip')}</button></div></div>`);
 }
-function joinCollect(){const f=$('#joinF');if(!f)return;const st=JOIN_STEPS[JOIN.step];if(['personal','contact','work','edu'].includes(st)){const v=readFields(f);PF.filter(x=>x[1]===st||(st==='edu'&&x[1]==='bank')).forEach(([k])=>{if(k in v)JOIN.vals[k]=v[k]})}if(st==='account'){JOIN.vals.username=loginName(f.username.value);JOIN.vals.consent=f.consent.checked}}
+function joinCollect(){const f=$('#joinF');if(!f)return;const st=JOIN_STEPS[JOIN.step];if(['personal','contact','work','edu'].includes(st)){const v=readFields(f);PF.filter(x=>x[1]===st||(st==='edu'&&x[1]==='bank')).forEach(([k])=>{if(k in v)JOIN.vals[k]=v[k]})}if(st==='account'){JOIN.vals.username=loginName(f.username.value||JOIN.vals.username||'');JOIN.vals.consent=f.consent.checked||!!JOIN.ap}}
 async function joinNext(){
  joinCollect();const st=JOIN_STEPS[JOIN.step],f=$('#joinF');
  if(['personal','contact','work','edu'].includes(st)){const miss=missingReq(JOIN.vals).filter(k=>{const x=PF.find(y=>y[0]===k);return x[1]===st||(st==='edu'&&x[1]==='bank')});if(st==='personal'&&!JOIN.photo){toast(t('photoReq'));return}if(miss.length){toast(t('required')+': '+miss.map(fieldLabel).join('، '));return}}
  if(st==='docs'){const miss=DOCS.filter(([k])=>ruleOf(k)==='req'&&!JOIN.files[k]);if(miss.length){toast(t('required')+': '+miss.map(([k])=>t('doc_'+k)).join('، '));return}}
- if(st==='account'){const u=JOIN.vals.username,pw=f.pw.value;
+ if(st==='account'){const u=JOIN.vals.username,pw=f.pw.value||JOIN.pw||'';if(JOIN.pw&&!f.pw2.value)f.pw2.value=JOIN.pw;JOIN.pw=pw;
   if(!/^[a-z0-9._-]{3,}$/.test(u)){toast(t('usernameHint'));return}if(pw.length<8||pw!==f.pw2.value){toast(t('pwMismatch'));return}if(!JOIN.vals.consent){toast(t('consentReq'));return}
-  if(S.team.some(m=>loginName(m.username)===u)||S.applicants.some(a=>a.username===u&&a.status==='pending')){toast(t('userTaken'));return}
-  const tok=location.hash.slice(6),inv=S.invites.find(i=>i.token===tok);
+  if(!JOIN.ap&&(S.team.some(m=>loginName(m.username)===u)||S.applicants.some(a=>a.username===u&&a.status==='pending'))){toast(t('userTaken'));return}
+  const tok=location.hash.slice(6),inv=S.invites.find(i=>i.token===tok)||JOIN.inv;
+  if(Store.mode==='fb'&&Store.fb)return joinSubmitFb(u,pw,tok);
   const ap={id:'a'+uid(),invite:tok,status:'pending',at:nowIso(),profile:JOIN.vals,photo:JOIN.photo,docs:JOIN.files,username:u};
   try{
    if(Store.mode==='fb'&&Store.fb){const cred=await Store.fb.auth.createUserWithEmailAndPassword(`${u}@${CFG().authDomain}`,pw);ap.uid=cred.user.uid;await Store.fb.db.collection(Store.coll('users')).doc(ap.uid).set({applicant:ap.id,status:'pending',invite:tok});await FileStore.flush()}
@@ -2663,6 +2666,34 @@ async function joinNext(){
   S.applicants.unshift(ap);Store.put('applicants',ap);if(inv){inv.status='used';inv.usedAt=nowIso();Store.put('invites',inv)}
   notifyAdmins('nt_join',{n:ap.profile.nameEn||u},'approvals','join');JOIN.done=true;render();return}
  JOIN.step++;render();scrollTo(0,0);
+}
+
+async function joinSubmitFb(u,pw,tok){
+ if(JOIN.busy)return;
+ const db=Store.fb.db,auth=Store.fb.auth,email=`${u}@${CFG().authDomain}`;
+ let ap=JOIN.ap;
+ if(!ap||ap.username!==u){ap={id:'a'+uid(),invite:tok,status:'pending',at:nowIso(),profile:Object.assign({},JOIN.vals),photo:JOIN.photo||null,docs:JOIN.files,username:u};delete ap.profile.consent;ap.consent={at:nowIso(),text:t('consentText')};JOIN.ap=ap;JOIN.uid=null}
+ JOIN.busy=true;JOIN.err='';render();
+ const fail=(step,e)=>{console.warn('[join]',step,e);JOIN.busy=false;const c=(e&&(e.code||e.message))||String(e);JOIN.err=t('js_err_'+step)+(c?' — '+c:'');render()};
+ // 1 · the login (created once; a retry signs back in with the same password)
+ try{
+  if(!JOIN.uid){try{const c=await auth.createUserWithEmailAndPassword(email,pw);JOIN.uid=c.user.uid}
+   catch(e){if(e.code!=='auth/email-already-in-use')throw e;const c=await auth.signInWithEmailAndPassword(email,pw).catch(()=>{throw {code:'userTaken'}});JOIN.uid=c.user.uid}}
+  else if(!auth.currentUser||auth.currentUser.uid!==JOIN.uid){const c=await auth.signInWithEmailAndPassword(email,pw);JOIN.uid=c.user.uid}
+ }catch(e){if(e.code==='userTaken'){JOIN.busy=false;JOIN.ap=null;JOIN.err=t('userTaken');render();return}return fail('account',e)}
+ ap.uid=JOIN.uid;
+ // 2 · documents
+ try{await FileStore.flush()}catch(e){return fail('files',e)}
+ // 3 · the profile itself (needs the invite still open)
+ try{await db.collection(Store.coll('applicants')).doc(ap.id).set(JSON.parse(JSON.stringify(ap)))}
+ catch(e){return fail(e.code==='permission-denied'?'invite':'profile',e)}
+ // 4 · the pending access record (skipped if a previous attempt already made it)
+ try{const ref=db.collection(Store.coll('users')).doc(ap.uid),d=await ref.get();if(!d.exists)await ref.set({applicant:ap.id,status:'pending',invite:tok})}
+ catch(e){return fail('access',e)}
+ // 5 · close the invite and tell the admins (never blocks the applicant)
+ try{await db.collection(Store.coll('invites')).doc(tok).update({status:'used',usedAt:nowIso()})}catch(e){console.warn('[join] invite',e)}
+ try{notifyAdmins('nt_join',{n:ap.profile.nameEn||u},'approvals','join')}catch(e){}
+ JOIN.busy=false;JOIN.err='';JOIN.done=true;render();scrollTo(0,0);
 }
 
 /* ---------- approvals (onboarding + profile changes + HR) ---------- */
@@ -3391,7 +3422,7 @@ function loginView(){
  ${Store.mode==='fb'?(FB_CONFIG?`<p class="small muted" style="text-align:center;margin:4px 0 0">🔒 ${t('secureSignIn')}</p>`:`<button class="btn ghost" type="button" data-act="fbOff">${t('localMode')}</button>`):''}</form>
  ${S.meta.demo&&Store.mode!=='fb'?`<p class="small muted" style="margin:16px 0 0">${t('demoCreds')}</p>`:''}<div class="login-tag"><span>+</span>Enhancing Design Excellence</div></div></div>`;
 }
-function pendingView(){return `<div class="login-wrap"><div class="card login join-done">${ic('hour')}<h2>${t('joinThanks')}</h2><p class="muted">${t('joinThanksSub')}</p><button class="btn" data-act="signOut">${t('signOutQ')}</button></div></div>`}
+function pendingView(){return `<div class="login-wrap"><div class="card login join-done">${ic('hour')}<h2>${t('pendingT')}</h2><p class="muted">${t('pendingSub')}</p><button class="btn" data-act="signOut">${t('signOutQ')}</button></div></div>`}
 
 /* ---------- team ---------- */
 function viewTeam(){
